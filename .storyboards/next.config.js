@@ -1,7 +1,7 @@
 const compose = require("compose-function")
+const { generateStories, generateStoriesMap } = require("storyboards")
 const path = require("path")
 const fs = require("fs")
-const { toRequireContext } = require("./configSupport")
 
 /*
 parameters used
@@ -11,36 +11,62 @@ parameters used
 - aliases
 */
 
-const transpile = require("next-transpile-modules")([
-  path.resolve(__dirname, "../"),
-  "@chakra-ui",
-])
+const excludedDirs = [".storyboards"]
+if (process.env.STORYBOARDS_TEMPLATE) {
+  excludedDirs.push("template")
+}
 
-const composed = compose(transpile)
+let {
+  stories,
+  wrapper,
+  basePath,
+  ignore = ["node_modules"],
+  transpileModules = [],
+} = getConfig() || {}
 
-let { stories, wrapper, basePath } = getConfig() || {}
+stories = stories.map(path.normalize)
 if (basePath && basePath.trim() === "/") {
   basePath = ""
 }
 
-const storiesGlobs = stories
-  .filter(Boolean)
-  .map((g) => path.join(path.resolve(__dirname, "../"), g))
+const transpile = require("next-transpile-modules")([
+  path.resolve(__dirname, "../"),
+  ...transpileModules,
+])
+
+const composed = compose(transpile)
+
+// const storiesGlobs = stories.map((g) => path.normalize(path.join('./', g)))
+// console.log({ storiesGlobs })
+
+const generate = once(async () => {
+  const storiesMap = await generateStoriesMap({
+    globs: stories,
+    cwd: path.resolve(path.join(__dirname, "..")),
+    ignore: [...ignore, ...excludedDirs],
+  })
+
+  fs.writeFileSync(path.join(__dirname, "storiesMap.js"), storiesMap)
+
+  await generateStories({
+    globs: stories,
+    cwd: path.resolve(path.join(__dirname, "..")),
+    targetDir: path.resolve(path.join(__dirname, "./pages/stories")),
+    ignore,
+  })
+})
+generate()
 
 module.exports = composed({
   webpack: (config, options) => {
     const { webpack } = options
-    const { path: dir, recursive, match } = toRequireContext(storiesGlobs[0]) // TODO support for array stories paths
     // console.log({ dir, recursive, match })
     config.plugins.push(
       new webpack.DefinePlugin({
         WRAPPER_COMPONENT_PATH: JSON.stringify(
           wrapper ? path.join(path.resolve(__dirname, "../"), wrapper) : "",
         ),
-        STORIES_EXTENSION: match,
-        STORIES_PATH: JSON.stringify(dir),
         BASE_PATH: JSON.stringify(basePath || "/"),
-        STORIES_RECURSIVE: JSON.stringify(recursive),
       }),
     )
     // replace the stories react packages with local ones to not dedupe
@@ -55,6 +81,19 @@ module.exports = composed({
         // '@chakra-ui'
       ]),
     }
+    config.module.rules.push({
+      test: /\.tsx?$/,
+      loader: {
+        loader: "inspect-loader",
+        options: {
+          callback(inspect) {
+            // console.log(inspect.arguments)
+            console.log(inspect.context.resourcePath)
+            // console.log(inspect.options)
+          },
+        },
+      },
+    })
     return config
   },
   ...(basePath ? { experimental: { basePath } } : {}),
@@ -66,11 +105,11 @@ function aliasOfPackages(packages) {
     {},
     ...packages.map((p) => {
       const pkgPath = path.resolve(__dirname, ".", "node_modules", p)
-      if (fs.existsSync(pkgPath)) {
-        return {
-          [p]: pkgPath,
-        }
+
+      return {
+        [p]: pkgPath,
       }
+
       return {}
     }),
   )
@@ -82,5 +121,16 @@ function getConfig() {
   } catch (e) {
     console.log(`cannot find './storyboards.config.js'`)
     process.exit(1)
+  }
+}
+
+function once(fn) {
+  var result
+  return function () {
+    if (fn) {
+      result = fn.apply(this, arguments)
+      fn = null
+    }
+    return result
   }
 }

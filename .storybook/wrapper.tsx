@@ -1,6 +1,7 @@
 import CSSReset from "@chakra-ui/css-reset/src"
 import theme from "@chakra-ui/theme/src"
-import { ChakraProvider, Stack } from "@chakra-ui/core/src"
+import { ChakraProvider } from "@chakra-ui/system/src"
+import { Stack } from "@chakra-ui/layout/src"
 import * as React from "react"
 
 export const Chakra: React.FC = ({ children }) => (

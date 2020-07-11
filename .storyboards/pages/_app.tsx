@@ -1,4 +1,5 @@
 import React, { Fragment, useState } from "react"
+import "../nprogress.css"
 import {
   ThemeProvider,
   CSSReset,
@@ -13,6 +14,15 @@ import { FiBook as LogoPart } from "react-icons/fi"
 import Head from "next/head"
 import { StoriesIndex } from "../components/StoriesIndex"
 import { Global, css } from "@emotion/core"
+import NProgress from "nprogress"
+import { Router } from "next/router"
+
+Router.events.on("routeChangeStart", (url) => {
+  console.log(`Loading: ${url}`)
+  NProgress.start()
+})
+Router.events.on("routeChangeComplete", () => NProgress.done())
+Router.events.on("routeChangeError", () => NProgress.done())
 
 export const Logo = ({ ...rest }) => {
   return (

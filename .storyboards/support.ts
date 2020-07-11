@@ -3,42 +3,48 @@ import memoize from "lodash/memoize"
 import startCase from "lodash/startCase"
 import { Fragment } from "react"
 import path from "path"
-
-const contexts = [
-  // because require.context can't receive non literal values
-  require.context(STORIES_PATH, STORIES_RECURSIVE, STORIES_EXTENSION),
-].filter(Boolean)
+import storiesMap from "./storiesMap"
 
 type GetStoriesReturnType = {
   filename: string
   title: string
   absolutePath: string
-  getExports: () => Record<string, any>
+  // getExports: () => Record<string, any>
 }[]
 
-export const getStories = memoize(
-  (): GetStoriesReturnType => {
-    const exports = flatten(
-      contexts.map((c, i) =>
-        c.keys().map((filename) => ({
-          filename,
-          context: contexts[i],
-          absolutePath: path.join(STORIES_PATH, filename),
-        })),
-      ),
-    )
-    return exports.map(({ context, filename, ...rest }) => {
-      return {
-        ...rest,
-        filename,
-        title: formatPathToTitle(filename),
-        getExports: () => {
-          return context(filename)
-        },
-      }
-    })
-  },
-)
+export const getStories = (): GetStoriesReturnType => {
+  return Object.keys(storiesMap).map((filename) => {
+    return {
+      absolutePath: storiesMap[filename],
+      filename,
+      title: formatPathToTitle(filename),
+    }
+  })
+}
+
+// export const _getStories = memoize(
+//     (): GetStoriesReturnType => {
+//         const exports = flatten(
+//             contexts.map((c, i) =>
+//                 c.keys().map((filename) => ({
+//                     filename,
+//                     context: contexts[i],
+//                     absolutePath: path.join(STORIES_PATH, filename),
+//                 })),
+//             ),
+//         )
+//         return exports.map(({ context, filename, ...rest }) => {
+//             return {
+//                 ...rest,
+//                 filename,
+//                 title: formatPathToTitle(filename),
+//                 getExports: () => {
+//                     return context(filename)
+//                 },
+//             }
+//         })
+//     },
+// )
 
 export function formatPathToTitle(path: string) {
   const endPath = path
@@ -50,6 +56,7 @@ export function formatPathToTitle(path: string) {
   return startCase(withoutExt)
 }
 
+// TODO memoize this
 export function getWrapperComponent() {
   try {
     return require(WRAPPER_COMPONENT_PATH).default
