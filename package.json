@@ -18,7 +18,7 @@
   "license": "MIT",
   "scripts": {
     "contrib:add": "all-contributors add",
-    "vitro": "vitro new --skip-install",
+    "vtro": "vitro new --skip-install",
     "contrib:gen": "all-contributors generate",
     "prestart": "yarn && yarn bootstrap",
     "boot": "yarn prestart && yarn build",
@@ -178,5 +178,8 @@
     "shelljs": "0.8.4",
     "ts-jest": "26.1.0",
     "typescript": "3.9.5"
+  },
+  "dependencies": {
+    "@vitro/cli": "/Users/morse/Documents/GitHub/react-comics/packages/cli"
   }
 }
