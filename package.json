@@ -18,7 +18,7 @@
   "license": "MIT",
   "scripts": {
     "contrib:add": "all-contributors add",
-    "newboard": "storyboards new --no-install && cd .storyboards && yarn link storyboards",
+    "vitro": "vitro new --skip-install",
     "contrib:gen": "all-contributors generate",
     "prestart": "yarn && yarn bootstrap",
     "boot": "yarn prestart && yarn build",
